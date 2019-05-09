@@ -26,6 +26,7 @@ namespace FAES_Updater
 
         static void Main(string[] args)
         {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
             IntPtr handle = GetConsoleWindow();
 
             for (int i = 0; i < args.Length; i++)
