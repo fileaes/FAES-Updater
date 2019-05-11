@@ -26,7 +26,7 @@ namespace FAES_Updater
         private static bool _writeExtraFiles = true;
         private static bool _showUpdaterVer = false;
 
-        private const string preReleaseTag = "DEV190510-1";
+        private const string preReleaseTag = "DEV190511-1";
 
         static void Main(string[] args)
         {
@@ -162,8 +162,18 @@ namespace FAES_Updater
                             }
                             catch
                             {
-                                Logging.Log(String.Format("Attempt 2: '{0}' could not be deleted! Aborting installation...", toolFinalName), Severity.ERROR);
-                                return;
+                                Logging.Log(String.Format("Attempt 2: '{0}' could not be deleted! Going nuclear on all FAES related processes before reattempting deletion...", toolFinalName), Severity.WARN);
+                                KillFAES(null);
+
+                                try
+                                {
+                                    SafeDeleteFile(finalFilePath);
+                                }
+                                catch
+                                {
+                                    Logging.Log(String.Format("Attempt 3: '{0}' could not be deleted! Aborting installation...", toolFinalName), Severity.WARN);
+                                    return;
+                                }
                             }
                         }
                         
@@ -316,6 +326,11 @@ namespace FAES_Updater
                         process.Kill();
                         Logging.Log(String.Format("Killed '{0}' (PID: {1})!", process.ProcessName, process.Id), Severity.DEBUG);
                     }
+                    foreach (var process in Process.GetProcessesByName("FAES_GUI"))
+                    {
+                        process.Kill();
+                        Logging.Log(String.Format("Killed '{0}' (PID: {1})!", process.ProcessName, process.Id), Severity.DEBUG);
+                    }
                 }
                 if (tool == "faes_cli" || tool == null)
                 {
@@ -324,10 +339,30 @@ namespace FAES_Updater
                         process.Kill();
                         Logging.Log(String.Format("Killed '{0}' (PID: {1})!", process.ProcessName, process.Id), Severity.DEBUG);
                     }
+                    foreach (var process in Process.GetProcessesByName("FileAES_CLI"))
+                    {
+                        process.Kill();
+                        Logging.Log(String.Format("Killed '{0}' (PID: {1})!", process.ProcessName, process.Id), Severity.DEBUG);
+                    }
+                    foreach (var process in Process.GetProcessesByName("FAES_CLI"))
+                    {
+                        process.Kill();
+                        Logging.Log(String.Format("Killed '{0}' (PID: {1})!", process.ProcessName, process.Id), Severity.DEBUG);
+                    }
                 }
                 if (tool == "faes_legacy" || tool == null)
                 {
                     foreach (var process in Process.GetProcessesByName("FileAES_Legacy"))
+                    {
+                        process.Kill();
+                        Logging.Log(String.Format("Killed '{0}' (PID: {1})!", process.ProcessName, process.Id), Severity.DEBUG);
+                    }
+                    foreach (var process in Process.GetProcessesByName("FileAES-Legacy"))
+                    {
+                        process.Kill();
+                        Logging.Log(String.Format("Killed '{0}' (PID: {1})!", process.ProcessName, process.Id), Severity.DEBUG);
+                    }
+                    foreach (var process in Process.GetProcessesByName("FAES_Legacy"))
                     {
                         process.Kill();
                         Logging.Log(String.Format("Killed '{0}' (PID: {1})!", process.ProcessName, process.Id), Severity.DEBUG);
