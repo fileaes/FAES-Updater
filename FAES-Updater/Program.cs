@@ -26,7 +26,7 @@ namespace FAES_Updater
         private static bool _writeExtraFiles = true;
         private static bool _showUpdaterVer = false;
 
-        private const string preReleaseTag = "DEV190511-1";
+        private const string preReleaseTag = "DEV190511-2";
 
         static void Main(string[] args)
         {
@@ -134,7 +134,7 @@ namespace FAES_Updater
 
             try
             {
-                if (DoesVersionExist())
+                if (DoesVersionExist(tool, _installVer, _branch))
                 {
                     if (DownloadFile(downloadLink, installPath, fileName))
                     {
@@ -214,16 +214,16 @@ namespace FAES_Updater
             }
         }
 
-        private static bool DoesVersionExist()
+        private static bool DoesVersionExist(string tool, string installVer, string branch)
         {
-            Logging.Log(String.Format("Checking if '{0}' version '{1}' exists in branch '{2}'", _tool, _installVer, _branch), Severity.DEBUG);
+            Logging.Log(String.Format("Checking if '{0}' version '{1}' exists in branch '{2}'", tool, installVer, branch), Severity.DEBUG);
 
-            string downloadLink = String.Format("https://api.mullak99.co.uk/FAES/DoesVersionExist.php?app={0}&ver={1}&branch={2}", _tool, _installVer, _branch);
+            string downloadLink = String.Format("https://api.mullak99.co.uk/FAES/DoesVersionExist.php?app={0}&ver={1}&branch={2}", tool, installVer, branch);
 
             WebClient webClient = new WebClient();
             string doesExist = webClient.DownloadString(new Uri(downloadLink));
 
-            Logging.Log(String.Format("{0}|{2}|{1}: {3}", _tool, _installVer, _branch, doesExist), Severity.DEBUG);
+            Logging.Log(String.Format("{0}|{2}|{1}: {3}", tool, installVer, branch, doesExist), Severity.DEBUG);
 
             return (doesExist == "VersionExists");
         }
