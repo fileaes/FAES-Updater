@@ -8,6 +8,7 @@ using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace FAES_Updater
 {
@@ -20,13 +21,14 @@ namespace FAES_Updater
         private static string _installVer = "latest";
         private static UInt16 _delayStart = 0;
         private static bool _installSuite = false;
+        private static bool _useThreadedWherePossible = false;
         private static bool _verbose = false;
         private static bool _fullInstall = false;
         private static bool _runPost = false;
         private static bool _writeExtraFiles = true;
         private static bool _showUpdaterVer = false;
 
-        private const string preReleaseTag = "DEV190511-2";
+        private const string preReleaseTag = "";
 
         static void Main(string[] args)
         {
@@ -43,6 +45,7 @@ namespace FAES_Updater
 
                 if (strippedArg == "verbose" || strippedArg == "v" || strippedArg == "developer" || strippedArg == "dev" || strippedArg == "debug") _verbose = true;
                 else if (strippedArg == "suite" || strippedArg == "installsuite" || strippedArg == "all") _installSuite = true;
+                else if (strippedArg == "threadded" || strippedArg == "threaddedaspossible" || strippedArg == "fastmode") _useThreadedWherePossible = true;
                 else if (strippedArg == "updaterversion" || strippedArg == "updaterver" || strippedArg == "uver" || strippedArg == "showver" || strippedArg == "showversion") _showUpdaterVer = true;
                 else if (strippedArg == "fullinstall" || strippedArg == "full") _fullInstall = true;
                 else if (strippedArg == "portableinstall" || strippedArg == "p" || strippedArg == "portable") _fullInstall = false;
@@ -91,7 +94,7 @@ namespace FAES_Updater
 
             if (_showUpdaterVer)
             {
-                Logging.Log(String.Format("FAES-Updater Version: {0}", GetVersion()));
+                Logging.Log(String.Format("FAES-Updater Version: {0}\nBuild Date: {1}", GetVersion(), GetBuildDateFormatted()));
             }
             else
             {
@@ -103,9 +106,23 @@ namespace FAES_Updater
 
                 if (_installSuite)
                 {
-                    UpdateTool("faes_gui", Path.Combine(_directory, "FileAES"));
-                    UpdateTool("faes_legacy", Path.Combine(_directory, "FileAES_Legacy"));
-                    UpdateTool("faes_cli", Path.Combine(_directory, "FileAES_CLI"));
+                    if (_useThreadedWherePossible)
+                    {
+                        Logging.Log(String.Format("Install Suite is running in multi-threadded mode. Logging WILL NOT appear in a logical order."), Severity.WARN);
+
+                        Task updateToolFAESGUI = Task.Factory.StartNew(() => UpdateTool("faes_gui", Path.Combine(_directory, "FileAES")));
+                        Task updateToolFAESLegacy = Task.Factory.StartNew(() => UpdateTool("faes_legacy", Path.Combine(_directory, "FileAES_Legacy")));
+                        Task updateToolFAESCLI = Task.Factory.StartNew(() => UpdateTool("faes_cli", Path.Combine(_directory, "FileAES_CLI")));
+
+                        Task.WaitAll(updateToolFAESGUI, updateToolFAESLegacy, updateToolFAESCLI);
+                        Logging.Log("Multi-Threadded Install Suite completed!");
+                    }
+                    else
+                    {
+                        UpdateTool("faes_gui", Path.Combine(_directory, "FileAES"));
+                        UpdateTool("faes_legacy", Path.Combine(_directory, "FileAES_Legacy"));
+                        UpdateTool("faes_cli", Path.Combine(_directory, "FileAES_CLI"));
+                    }
                 }
                 else UpdateTool(_tool, _directory);
             }
@@ -451,6 +468,16 @@ namespace FAES_Updater
                 return "v" + ver[0] + "." + ver[1] + "." + ver[2];
             else
                 return "v" + ver[0] + "." + ver[1] + "." + ver[2] + " (" + preReleaseTag + ")";
+        }
+
+        public static string GetBuildDateFormatted()
+        {
+            return GetBuildDate().ToString("dd/MM/yyyy hh:mm:ss tt");
+        }
+
+        public static DateTime GetBuildDate()
+        {
+            return new FileInfo(Assembly.GetExecutingAssembly().Location).LastWriteTime;
         }
 
         [DllImport("kernel32.dll")]
