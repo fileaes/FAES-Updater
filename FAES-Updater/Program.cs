@@ -27,6 +27,7 @@ namespace FAES_Updater
         private static bool _runPost = false;
         private static bool _writeExtraFiles = true;
         private static bool _showUpdaterVer = false;
+        private static bool _deleteSelf = true;
 
         private const string preReleaseTag = "";
 
@@ -51,6 +52,7 @@ namespace FAES_Updater
                 else if (strippedArg == "portableinstall" || strippedArg == "p" || strippedArg == "portable") _fullInstall = false;
                 else if (strippedArg == "run" || strippedArg == "r" || strippedArg == "runpost") _runPost = true;
                 else if (strippedArg == "silent" || strippedArg == "s" || strippedArg == "headless") ShowWindow(handle, SW_HIDE);
+                else if (strippedArg == "preserveself" || strippedArg == "preserve" || strippedArg == "nodelete" || strippedArg == "nodel") _deleteSelf = false;
                 else if ((strippedArg == "delay" || strippedArg == "delaystart" || strippedArg == "delayinstall" || strippedArg == "delayupdater")
                     && args.Length > i + 1 && !String.IsNullOrEmpty(args[i + 1]) && UInt16.TryParse(args[i + 1], out _delayStart)) { }
                 else if ((strippedArg == "directory" || strippedArg == "d" || strippedArg == "dir" || strippedArg == "installdir")
@@ -125,6 +127,8 @@ namespace FAES_Updater
                     }
                 }
                 else UpdateTool(_tool, _directory);
+
+                if (_deleteSelf) SelfDelete();
             }
         }
 
@@ -454,6 +458,19 @@ namespace FAES_Updater
 
                 Logging.Log(String.Format("Added extra files to '{0}'!", dir), Severity.DEBUG);
             }
+        }
+
+        private static void SelfDelete()
+        {
+            string thisFile = Assembly.GetExecutingAssembly().Location;
+            Logging.Log(String.Format("Initiating self-destuct ({0}).", thisFile), Severity.DEBUG);
+            Process.Start(new ProcessStartInfo()
+            {
+                Arguments = "/C choice /C Y /N /D Y /T 1 & Del \"" + thisFile + "\"",
+                WindowStyle = ProcessWindowStyle.Hidden,
+                CreateNoWindow = true,
+                FileName = "cmd.exe"
+            });
         }
 
         public static bool GetVerbose()
