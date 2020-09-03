@@ -17,6 +17,7 @@ force update tools. This requires use of the various launch arguments available 
 - `--silent`: Toggles whether the installation should be perfored silently (Hide console window)
 - `--run`: Toggles whether the FAES tool will be automatically executed after install
 - `--delay <time(MS)>`: Sets installation delay to give time for the host application to be exited
+- `--preserveself`: Disables self-deletion of FAES-Updater.exe after the installation process is completed
 - `--dir <path>`: Sets the install path for the FAES tool(s)
 - `--fastmode`: Uses multithreading where possible (currently only used installing the suite)
 - `--suite`: Installs all the latest FAES-powered tools (FileAES, FileAES-Legacy and FileAES-CLI) for the requested branch
