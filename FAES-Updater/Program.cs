@@ -17,7 +17,7 @@ namespace FAES_Updater
         private static string _directory = "";
         private static string _branch = "stable";
         private static string _tool = "faes_gui";
-        private static string _faesLib = "both";
+        private static string _faesLib = "all";
         private static string _installVer = "latest";
         private static UInt16 _delayStart = 0;
         private static bool _installSuite = false;
@@ -80,17 +80,7 @@ namespace FAES_Updater
                     else if (args[i + 1].ToLower() == "faes_cli") _tool = "faes_cli";
                     else if (args[i + 1].ToLower() == "faes_legacy") _tool = "faes_legacy";
                 }
-                else if ((strippedArg == "faeslib" || strippedArg == "l") && args.Length > i + 1 && !String.IsNullOrEmpty(args[i + 1]))
-                {
-                    if (args[i + 1].ToLower() == "both") _faesLib = "both";
-                    else if (args[i + 1].ToLower() == "netframework") _faesLib = "netf";
-                    else if (args[i + 1].ToLower() == "netf") _faesLib = "netf";
-                    else if (args[i + 1].ToLower().Contains("net4")) _faesLib = "netf";
-                    else if (args[i + 1].ToLower().Contains("netcore")) _faesLib = "netc";
-                    else if (args[i + 1].ToLower() == "netc") _faesLib = "netc";
-                }
-                else if (strippedArg == "netcore" || strippedArg == "c" || strippedArg == "core") _faesLib = "netc";
-                else if (strippedArg == "netframework" || strippedArg == "f" || strippedArg == "framework") _faesLib = "netf";
+                else if ((strippedArg == "faeslib" || strippedArg == "l") && args.Length > i + 1 && !String.IsNullOrEmpty(args[i + 1])) _faesLib = args[i + 1].ToLower();
                 else if (strippedArg == "noextrafiles" || strippedArg == "pure" || strippedArg == "noextras") _writeExtraFiles = false;
             }
 
@@ -205,6 +195,41 @@ namespace FAES_Updater
                             CleanupMiscFiles(directory);
                             if (_writeExtraFiles) AddExtraFiles(tool, directory);
 
+                            if (_fullInstall)
+                            {
+                                try
+                                {
+                                    switch (tool)
+                                    {
+                                        case "faes_gui":
+                                            {
+                                                string process = Path.Combine(directory, toolFinalName);
+                                                Logging.Log(String.Format("Starting process '{0}' to enable FullInstall...", toolFinalName), Severity.DEBUG);
+                                                Process p = new Process();
+                                                p.StartInfo.FileName = process;
+                                                p.StartInfo.Arguments = String.Format("--genFullInstallConfig --installBranch {0}", _branch);
+                                                p.StartInfo.UseShellExecute = false;
+                                                p.StartInfo.CreateNoWindow = true;
+                                                p.Start();
+                                                Thread.Sleep(500);
+                                                Logging.Log(String.Format("FullInstall enabled for '{0}'!", toolFinalName), Severity.DEBUG);
+                                                break;
+                                            }
+                                        case "faes_legacy":
+                                            {
+                                                string launchParamsFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), @"mullak99\FileAES\config\FileAES_Legacy-launchParams.cfg");
+                                                File.WriteAllText(launchParamsFilePath, String.Format("--fullinstall\n--{0}", _branch));
+                                                Logging.Log(String.Format("FullInstall enabled for '{0}'!", toolFinalName), Severity.DEBUG);
+                                                break;
+                                            }
+                                    }
+                                }
+                                catch
+                                {
+                                    Logging.Log(String.Format("FullInstall could not be enabled for '{0}'!", toolFinalName), Severity.WARN);
+                                }
+                            }
+
                             if (_runPost && toolFinalName != "FAES.dll")
                             {
                                 string process = Path.Combine(directory, toolFinalName);
@@ -253,7 +278,7 @@ namespace FAES_Updater
         {
             Logging.Log(String.Format("Extracting ZIP '{0}'", sourceZipPath), Severity.DEBUG);
 
-            if (_tool == "faes" && _faesLib != "both")
+            if (_tool == "faes" && _faesLib != "all")
             {
                 Logging.Log(String.Format("Library-based ZIP extaction selected."), Severity.DEBUG);
 
@@ -269,19 +294,27 @@ namespace FAES_Updater
                     libPaths.Add(dir.Replace(tempPath, ""));
                 }
 
-                string netCorePath = libPaths.FirstOrDefault(path => path.Split('/', '\\').Last().Contains("netcoreapp"));
-                string net4xPath = libPaths.FirstOrDefault(path => path.Split('/', '\\').Last().Contains("net4"));
-
                 List<string> allFiles;
 
-                if (_faesLib == "netc")
+                if (_faesLib.Contains("netstandard"))
                 {
-                    Logging.Log(String.Format("NetCore-based library requested. Selecting '{0}'.", netCorePath), Severity.DEBUG);
-                    allFiles = Directory.GetFiles(netCorePath, "*.*", SearchOption.AllDirectories).ToList();
+                    string faesStandLib = _faesLib.Replace("netstandard", "");
+                    string netStandardPath = libPaths.FirstOrDefault(path => path.Split('/', '\\').Last().Contains("netstandard" + faesStandLib));
+
+                    Logging.Log(String.Format("NetStandard{1}-based library requested. Selecting '{0}'.", netStandardPath, faesStandLib), Severity.DEBUG);
+                    allFiles = Directory.GetFiles(netStandardPath, "*.*", SearchOption.AllDirectories).ToList();
+                }
+                else if (_faesLib.Contains("net4"))
+                {
+                    string faesStandLib = _faesLib.Replace("net", "");
+                    string net4xPath = libPaths.FirstOrDefault(path => path.Split('/', '\\').Last().Contains("net" + faesStandLib));
+                    Logging.Log(String.Format("NetFramework{1}-based library requested. Selecting '{0}'.", net4xPath, faesStandLib), Severity.DEBUG);
+                    allFiles = Directory.GetFiles(net4xPath, "*.*", SearchOption.AllDirectories).ToList();
                 }
                 else
                 {
-                    Logging.Log(String.Format("NetFramework-based library requested. Selecting '{0}'.", net4xPath), Severity.DEBUG);
+                    string net4xPath = libPaths.FirstOrDefault(path => path.Split('/', '\\').Last().Contains("net45"));
+                    Logging.Log(String.Format("NetFramework45-based library requested. Selecting '{0}'.", net4xPath), Severity.DEBUG);
                     allFiles = Directory.GetFiles(net4xPath, "*.*", SearchOption.AllDirectories).ToList();
                 }
 
