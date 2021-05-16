@@ -124,7 +124,7 @@ namespace FAES_Updater
 
         private static void UpdateTool(string tool, string directory)
         {
-            if (String.IsNullOrWhiteSpace(directory)) directory = Environment.CurrentDirectory;
+            if (String.IsNullOrWhiteSpace(directory)) directory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().CodeBase).Replace("file:", "").TrimStart(':', '/', '\\');
 
             string toolNameFormatted;
 
