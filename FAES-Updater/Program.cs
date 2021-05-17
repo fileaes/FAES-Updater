@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32;
 
 namespace FAES_Updater
 {
@@ -28,6 +29,9 @@ namespace FAES_Updater
         private static bool _writeExtraFiles = true;
         private static bool _showUpdaterVer = false;
         private static bool _deleteSelf = true;
+        private static bool _associateFileTypes = false;
+        private static bool _startMenuShortcuts = false;
+        private static bool _contextMenus = false;
 
         private const string preReleaseTag = "";
 
@@ -49,6 +53,9 @@ namespace FAES_Updater
                 else if (strippedArg == "threadded" || strippedArg == "threaddedaspossible" || strippedArg == "fastmode") _useThreadedWherePossible = true;
                 else if (strippedArg == "updaterversion" || strippedArg == "updaterver" || strippedArg == "uver" || strippedArg == "showver" || strippedArg == "showversion") _showUpdaterVer = true;
                 else if (strippedArg == "fullinstall" || strippedArg == "full") _fullInstall = true;
+                else if (strippedArg == "associatefiletypes" || strippedArg == "filetypes") _associateFileTypes = true;
+                else if (strippedArg == "startmenushortcuts" || strippedArg == "startmenu") _startMenuShortcuts = true;
+                else if (strippedArg == "contextmenus" || strippedArg == "context") _contextMenus = true;
                 else if (strippedArg == "portableinstall" || strippedArg == "p" || strippedArg == "portable") _fullInstall = false;
                 else if (strippedArg == "run" || strippedArg == "r" || strippedArg == "runpost") _runPost = true;
                 else if (strippedArg == "silent" || strippedArg == "s" || strippedArg == "headless") ShowWindow(handle, SW_HIDE);
@@ -190,6 +197,7 @@ namespace FAES_Updater
                         
                         if (!File.Exists(finalFilePath))
                         {
+                            string finalToolFilePath = Path.Combine(directory, toolFinalName);
                             ExtractZip(Path.Combine(installPath, fileName), directory, installPath);
 
                             CleanupMiscFiles(directory);
@@ -199,17 +207,31 @@ namespace FAES_Updater
                             {
                                 try
                                 {
+                                    Reg regControl = new Reg();
+
                                     switch (tool)
                                     {
                                         case "faes_gui":
                                             {
+                                                if (_associateFileTypes)
+                                                    regControl.AssociateFileTypes(finalToolFilePath);
+                                                if (_contextMenus)
+                                                    regControl.ContextMenus(finalToolFilePath);
+                                                if(_startMenuShortcuts)
+                                                    regControl.StartShortcut(finalToolFilePath, "FileAES", "A GUI application for encrypting and decrypting files using FAES.");
+
                                                 string process = Path.Combine(directory, toolFinalName);
                                                 Logging.Log(String.Format("Starting process '{0}' to enable FullInstall...", toolFinalName), Severity.DEBUG);
-                                                Process p = new Process();
-                                                p.StartInfo.FileName = process;
-                                                p.StartInfo.Arguments = String.Format("--genFullInstallConfig --installBranch {0}", _branch);
-                                                p.StartInfo.UseShellExecute = false;
-                                                p.StartInfo.CreateNoWindow = true;
+                                                Process p = new Process
+                                                {
+                                                    StartInfo =
+                                                    {
+                                                        FileName = process,
+                                                        Arguments = String.Format("--genFullInstallConfig --installBranch {0} {1}", _branch, string.Join(" ", DumpInstallerOptions())),
+                                                        UseShellExecute = false,
+                                                        CreateNoWindow = true
+                                                    }
+                                                };
                                                 p.Start();
                                                 Thread.Sleep(500);
                                                 Logging.Log(String.Format("FullInstall enabled for '{0}'!", toolFinalName), Severity.DEBUG);
@@ -217,10 +239,30 @@ namespace FAES_Updater
                                             }
                                         case "faes_legacy":
                                             {
+                                                if (_associateFileTypes)
+                                                    regControl.AssociateFileTypes(finalToolFilePath);
+                                                if (_contextMenus)
+                                                    regControl.ContextMenus(finalToolFilePath);
+                                                if (_startMenuShortcuts)
+                                                    regControl.StartShortcut(finalToolFilePath, "FileAES Legacy", "A GUI application for encrypting and decrypting files using FAES.");
+
                                                 string launchParamsFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), @"mullak99\FileAES\config\FileAES_Legacy-launchParams.cfg");
-                                                File.WriteAllText(launchParamsFilePath, String.Format("--fullinstall\n--{0}", _branch));
+                                                File.WriteAllText(launchParamsFilePath, String.Format("--fullinstall\n--{0}\n{1}", _branch, string.Join("\n", DumpInstallerOptions())));
                                                 Logging.Log(String.Format("FullInstall enabled for '{0}'!", toolFinalName), Severity.DEBUG);
                                                 break;
+                                            }
+                                        case "faes_cli":
+                                        {
+                                            if (_associateFileTypes)
+                                                regControl.AssociateFileTypes(finalToolFilePath);
+                                            if (_contextMenus)
+                                                regControl.ContextMenus(finalToolFilePath);
+                                            if (_startMenuShortcuts)
+                                                regControl.StartShortcut(finalToolFilePath, "FileAES CLI", "A CLI application for encrypting and decrypting files using FAES.");
+
+                                            // Start process and automatically create full-install config, similar to "FAES_GUI".
+                                            Logging.Log(String.Format("FullInstall enabled for '{0}'!", toolFinalName), Severity.DEBUG);
+                                            break;
                                             }
                                     }
                                 }
@@ -252,7 +294,7 @@ namespace FAES_Updater
             }
             catch (Exception e)
             {
-                Logging.Log(String.Format("An unexpected error occured while downloading the install files! Exception: {0}", e.ToString()), Severity.ERROR);
+                Logging.Log(String.Format("An unexpected error occurred while downloading the install files! Exception: {0}", e.ToString()), Severity.ERROR);
             }
             finally
             {
@@ -329,7 +371,7 @@ namespace FAES_Updater
             }
             else
             {
-                Logging.Log(String.Format("Standard ZIP extaction selected."), Severity.DEBUG);
+                Logging.Log(String.Format("Standard ZIP extraction selected."), Severity.DEBUG);
                 ZipFile.ExtractToDirectory(sourceZipPath, destinationPath);
             }
         }
@@ -356,7 +398,7 @@ namespace FAES_Updater
                         Logging.Log(String.Format("Download of '{0}' Complete!", fileName), Severity.DEBUG);
                         return true;
                     }
-                    else Logging.Log("An unexpected error occured while downloading the install files!", Severity.ERROR);
+                    else Logging.Log("An unexpected error occurred while downloading the install files!", Severity.ERROR);
                 }
                 else Logging.Log("The requested file could not be found!", Severity.ERROR);
             }
@@ -504,6 +546,20 @@ namespace FAES_Updater
                 CreateNoWindow = true,
                 FileName = "cmd.exe"
             });
+        }
+
+        private static string[] DumpInstallerOptions()
+        {
+            List<string> options = new List<string>();
+
+            if (_associateFileTypes)
+                options.Add("--associatefiletypes");
+            if (_startMenuShortcuts)
+                options.Add("--startmenushortcuts");
+            if (_contextMenus)
+                options.Add("--contextmenus");
+
+            return options.ToArray();
         }
 
         public static bool GetVerbose()
