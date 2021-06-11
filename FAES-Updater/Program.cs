@@ -36,11 +36,11 @@ namespace FAES_Updater
         private static bool _startMenuShortcuts = false;
         private static bool _contextMenus = false;
         private static bool _uninstall = false;
-        private static bool _onlyShowInstalled = false;
+        private static bool _showInstalled = false;
 
         private const string preReleaseTag = "";
 
-        static void Main(string[] args)
+        private static int Main(string[] args)
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
             IntPtr handle = GetConsoleWindow();
@@ -53,7 +53,7 @@ namespace FAES_Updater
 
                 strippedArg = strippedArg.TrimStart('-', '/', '\\');
 
-                if (strippedArg == "verbose" || strippedArg == "v" || strippedArg == "developer" || strippedArg == "dev" || strippedArg == "debug") _verbose = true;
+                if (strippedArg == "verbose" || strippedArg == "v" || strippedArg == "debug") _verbose = true;
                 else if (strippedArg == "suite" || strippedArg == "installsuite" || strippedArg == "all") _installSuite = true;
                 else if (strippedArg == "threadded" || strippedArg == "threaddedaspossible" || strippedArg == "fastmode") _useThreadedWherePossible = true;
                 else if (strippedArg == "updaterversion" || strippedArg == "updaterver" || strippedArg == "uver" || strippedArg == "showver" || strippedArg == "showversion") _showUpdaterVer = true;
@@ -94,7 +94,7 @@ namespace FAES_Updater
                 }
                 else if ((strippedArg == "faeslib" || strippedArg == "l") && args.Length > i + 1 && !String.IsNullOrEmpty(args[i + 1])) _faesLib = args[i + 1].ToLower();
                 else if (strippedArg == "noextrafiles" || strippedArg == "pure" || strippedArg == "noextras") _writeExtraFiles = false;
-                else if (strippedArg == "showinstalled" || strippedArg == "installed" || strippedArg == "installedtools") _onlyShowInstalled = true;
+                else if (strippedArg == "showinstalled" || strippedArg == "installed" || strippedArg == "installedtools") _showInstalled = true;
                 else if (strippedArg == "uninstall") _uninstall = true;
             }
 
@@ -102,9 +102,9 @@ namespace FAES_Updater
             {
                 if (_showUpdaterVer)
                 {
-                    Logging.Log(String.Format("FAES-Updater Version: {0}\nBuild Date: {1}", GetVersion(), GetBuildDateFormatted()));
+                    Logging.Log(String.Format("FAES-Updater Version: {0}\r\nBuild Date: {1}", GetVersion(), GetBuildDateFormatted()));
                 }
-                else if (_onlyShowInstalled)
+                if (_showInstalled)
                 {
                     string[] softwarePaths = _regControl.GetSoftwareFilePaths(out List<string> toolNames);
 
@@ -113,7 +113,7 @@ namespace FAES_Updater
                         Logging.Log(String.Format("Tool: {0}, Path: {1}", toolNames[i], softwarePaths[i]));
                     }
                 }
-                else
+                
                 {
                     if (_delayStart > 0)
                     {
@@ -144,6 +144,7 @@ namespace FAES_Updater
                             }
                         }
                         else UpdateTool(_tool, _directory);
+                        return 0;
                     }
                     else
                     {
@@ -175,20 +176,24 @@ namespace FAES_Updater
                                     Logging.Log("An unexpected error occurred when uninstalling one or more FAES tools! Exception: " + e, Severity.ERROR);
                                 }
                             }
+                            _regControl.DeleteSoftwareFilePaths();
+                            if (_deleteSelf) SelfDelete();
+                            return 0;
                         }
-                        else
+                        
                         {
                             Logging.Log("Cannot find any installed FAES tools! If you are certain you have them installed please delete them manually.", Severity.WARN);
+                            _regControl.DeleteSoftwareFilePaths();
+                            if (_deleteSelf) SelfDelete();
+                            return 1;
                         }
-                        _regControl.DeleteSoftwareFilePaths();
                     }
-
-                    if (_deleteSelf) SelfDelete();
                 }
             }
             catch (SecurityException)
             {
                 Logging.Log(String.Format("Please run as an administrator!"), Severity.ERROR);
+                return 2;
             }
         }
 
@@ -392,7 +397,10 @@ namespace FAES_Updater
 
         private static void ExtractZip(string sourceZipPath, string destinationPath, string tempPath)
         {
-            Logging.Log(String.Format("Extracting ZIP '{0}'", sourceZipPath), Severity.DEBUG);
+            if (_verbose)
+                Logging.Log(String.Format("Extracting ZIP '{0}'", sourceZipPath), Severity.DEBUG);
+            else
+                Logging.Log("Extracting tool...");
 
             if (_tool == "faes" && _faesLib != "all")
             {
@@ -442,6 +450,7 @@ namespace FAES_Updater
                     Logging.Log(String.Format("Moving file '{0}' to '{1}'.", Path.GetFileName(file), destinationPath), Severity.DEBUG);
                     File.Move(file, fileNameDest);
                 }
+                Logging.Log("Extraction completed!");
             }
             else
             {
@@ -458,7 +467,10 @@ namespace FAES_Updater
 
             if (!File.Exists(fullPath))
             {
-                Logging.Log(String.Format("Downloading install files to '{0}' from '{1}'...", fullPath, webLink));
+                if (_verbose)
+                    Logging.Log(String.Format("Downloading installation files to '{0}' from '{1}'...", fullPath, webLink), Severity.DEBUG);
+                else
+                    Logging.Log("Downloading installation files...");
 
                 WebClient webClient = new WebClient();
                 string downloadLink = webClient.DownloadString(new Uri(webLink));
@@ -469,7 +481,11 @@ namespace FAES_Updater
 
                     if (File.Exists(fullPath))
                     {
-                        Logging.Log(String.Format("Download of '{0}' Complete!", fileName), Severity.DEBUG);
+                        if (_verbose)
+                            Logging.Log(String.Format("Download of '{0}' complete!", fileName), Severity.DEBUG);
+                        else
+                            Logging.Log("Finished downloading installation files.");
+
                         return true;
                     }
                     else Logging.Log("An unexpected error occurred while downloading the install files!", Severity.ERROR);
@@ -561,7 +577,10 @@ namespace FAES_Updater
             try
             {
                 if (Directory.Exists(updaterTempPath)) Directory.Delete(updaterTempPath, true);
-                Logging.Log("Updater Temp directory cleared!", Severity.DEBUG);
+                if (_verbose)
+                    Logging.Log("Updater Temp directory cleared!", Severity.DEBUG);
+                else
+                    Logging.Log("Installation cleanup completed!");
             }
             catch
             {
@@ -572,6 +591,7 @@ namespace FAES_Updater
         private static void CleanupMiscFiles(string dir)
         {
             if (File.Exists(Path.Combine(dir, "LICENSE"))) File.Delete(Path.Combine(dir, "LICENSE"));
+            Logging.Log("Cleaned up misc files!");
         }
 
         private static bool SafeDeleteFile(string path)
