@@ -7,14 +7,17 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Win32;
+
 
 namespace FAES_Updater
 {
     class Program
     {
+        private static readonly Reg _regControl = new Reg();
+
         private static string _directory = "";
         private static string _branch = "stable";
         private static string _tool = "faes_gui";
@@ -32,6 +35,8 @@ namespace FAES_Updater
         private static bool _associateFileTypes = false;
         private static bool _startMenuShortcuts = false;
         private static bool _contextMenus = false;
+        private static bool _uninstall = false;
+        private static bool _onlyShowInstalled = false;
 
         private const string preReleaseTag = "";
 
@@ -89,43 +94,141 @@ namespace FAES_Updater
                 }
                 else if ((strippedArg == "faeslib" || strippedArg == "l") && args.Length > i + 1 && !String.IsNullOrEmpty(args[i + 1])) _faesLib = args[i + 1].ToLower();
                 else if (strippedArg == "noextrafiles" || strippedArg == "pure" || strippedArg == "noextras") _writeExtraFiles = false;
+                else if (strippedArg == "showinstalled" || strippedArg == "installed" || strippedArg == "installedtools") _onlyShowInstalled = true;
+                else if (strippedArg == "uninstall") _uninstall = true;
             }
 
-            if (_showUpdaterVer)
+            try
             {
-                Logging.Log(String.Format("FAES-Updater Version: {0}\nBuild Date: {1}", GetVersion(), GetBuildDateFormatted()));
-            }
-            else
-            {
-                if (_delayStart > 0)
+                if (_showUpdaterVer)
                 {
-                    Logging.Log(String.Format("Update delay requested. Delaying any I/O operations for {0}ms...", _delayStart));
-                    Thread.Sleep(_delayStart);
+                    Logging.Log(String.Format("FAES-Updater Version: {0}\nBuild Date: {1}", GetVersion(), GetBuildDateFormatted()));
                 }
-
-                if (_installSuite)
+                else if (_onlyShowInstalled)
                 {
-                    if (_useThreadedWherePossible)
+                    string[] softwarePaths = _regControl.GetSoftwareFilePaths(out List<string> toolNames);
+
+                    for (int i = 0; i < softwarePaths.Length; i++)
                     {
-                        Logging.Log(String.Format("Install Suite is running in multi-threadded mode. Logging WILL NOT appear in a logical order."), Severity.WARN);
+                        Logging.Log(String.Format("Tool: {0}, Path: {1}", toolNames[i], softwarePaths[i]));
+                    }
+                }
+                else
+                {
+                    if (_delayStart > 0)
+                    {
+                        Logging.Log(String.Format("Update delay requested. Delaying any I/O operations for {0}ms...", _delayStart));
+                        Thread.Sleep(_delayStart);
+                    }
 
-                        Task updateToolFAESGUI = Task.Factory.StartNew(() => UpdateTool("faes_gui", Path.Combine(_directory, "FileAES")));
-                        Task updateToolFAESLegacy = Task.Factory.StartNew(() => UpdateTool("faes_legacy", Path.Combine(_directory, "FileAES_Legacy")));
-                        Task updateToolFAESCLI = Task.Factory.StartNew(() => UpdateTool("faes_cli", Path.Combine(_directory, "FileAES_CLI")));
+                    if (!_uninstall)
+                    {
+                        if (_installSuite)
+                        {
+                            if (_useThreadedWherePossible)
+                            {
+                                Logging.Log(String.Format("Install Suite is running in multi-threadded mode. Logging WILL NOT appear in a logical order."), Severity.WARN);
 
-                        Task.WaitAll(updateToolFAESGUI, updateToolFAESLegacy, updateToolFAESCLI);
-                        Logging.Log("Multi-Threadded Install Suite completed!");
+                                Task updateToolFAESGUI = Task.Factory.StartNew(() => UpdateTool("faes_gui", Path.Combine(_directory, "FileAES")));
+                                Task updateToolFAESLegacy = Task.Factory.StartNew(() => UpdateTool("faes_legacy", Path.Combine(_directory, "FileAES_Legacy")));
+                                Task updateToolFAESCLI = Task.Factory.StartNew(() => UpdateTool("faes_cli", Path.Combine(_directory, "FileAES_CLI")));
+
+                                Task.WaitAll(updateToolFAESGUI, updateToolFAESLegacy, updateToolFAESCLI);
+                                Logging.Log("Multi-Threadded Install Suite completed!");
+                            }
+                            else
+                            {
+                                UpdateTool("faes_gui", Path.Combine(_directory, "FileAES"));
+                                UpdateTool("faes_legacy", Path.Combine(_directory, "FileAES_Legacy"));
+                                UpdateTool("faes_cli", Path.Combine(_directory, "FileAES_CLI"));
+                            }
+                        }
+                        else UpdateTool(_tool, _directory);
                     }
                     else
                     {
-                        UpdateTool("faes_gui", Path.Combine(_directory, "FileAES"));
-                        UpdateTool("faes_legacy", Path.Combine(_directory, "FileAES_Legacy"));
-                        UpdateTool("faes_cli", Path.Combine(_directory, "FileAES_CLI"));
-                    }
-                }
-                else UpdateTool(_tool, _directory);
+                        _regControl.DeleteContextMenus();
+                        _regControl.DeleteFileTypeAssociation();
+                        _regControl.DeleteStartMenuShortcuts();
 
-                if (_deleteSelf) SelfDelete();
+                        string[] softwarePaths = _regControl.GetSoftwareFilePaths(out List<string> toolNames);
+                        if (softwarePaths != null && softwarePaths.Length > 0)
+                        {
+                            for (int i = 0; i < softwarePaths.Length; i++)
+                            {
+                                try
+                                {
+                                    string toolName = toolNames[i];
+                                    string toolPath = softwarePaths[i];
+
+                                    try
+                                    {
+                                        DeleteTool(toolName, toolPath);
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        Logging.Log(String.Format("Could not delete '{0}' at path '{1}'. Exception: {2}", toolName, toolPath, e), Severity.ERROR);
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    Logging.Log("An unexpected error occurred when uninstalling one or more FAES tools! Exception: " + e, Severity.ERROR);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Logging.Log("Cannot find any installed FAES tools! If you are certain you have them installed please delete them manually.", Severity.WARN);
+                        }
+                        _regControl.DeleteSoftwareFilePaths();
+                    }
+
+                    if (_deleteSelf) SelfDelete();
+                }
+            }
+            catch (SecurityException)
+            {
+                Logging.Log(String.Format("Please run as an administrator!"), Severity.ERROR);
+            }
+        }
+
+        private static int KillTool(string toolName, int attemptNumber)
+        {
+            switch (attemptNumber)
+            {
+                case 1:
+                    Logging.Log(String.Format("Attempt 1: '{0}' could not be deleted! Attempting to find and end any FAES related processes before reattempting deletion...", toolName), Severity.WARN);
+                    KillFAES(toolName);
+                    break;
+                case 2:
+                    Logging.Log(String.Format("Attempt 2: '{0}' could not be deleted! Going nuclear on all FAES related processes before reattempting deletion...", toolName), Severity.WARN);
+                    KillFAES(null);
+                    break;
+                case 3:
+                    Logging.Log(String.Format("Attempt 3: '{0}' could not be deleted! Aborting installation...", toolName), Severity.WARN);
+                    break;
+                default:
+                    attemptNumber = 1;
+                    KillTool(toolName, attemptNumber);
+                    break;
+            }
+            return ++attemptNumber;
+        }
+
+        private static void DeleteTool(string toolName, string toolFilePath)
+        {
+            int attemptNumber = 1;
+            while (attemptNumber <= 3)
+            {
+                try
+                {
+                    SafeDeleteFile(toolFilePath);
+                    return;
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    attemptNumber = KillTool(toolName, attemptNumber);
+                }
             }
         }
 
@@ -165,36 +268,8 @@ namespace FAES_Updater
 
                         string finalFilePath = Path.Combine(directory, toolFinalName);
 
-                        try
-                        {
-                            SafeDeleteFile(finalFilePath);
-                        }
-                        catch (UnauthorizedAccessException)
-                        {
-                            Logging.Log(String.Format("Attempt 1: '{0}' could not be deleted! Attempting to find and end any FAES related processes before reattempting deletion...", toolFinalName), Severity.WARN);
-                            KillFAES(tool);
+                        DeleteTool(toolFinalName, finalFilePath);
 
-                            try
-                            {
-                                SafeDeleteFile(finalFilePath);
-                            }
-                            catch
-                            {
-                                Logging.Log(String.Format("Attempt 2: '{0}' could not be deleted! Going nuclear on all FAES related processes before reattempting deletion...", toolFinalName), Severity.WARN);
-                                KillFAES(null);
-
-                                try
-                                {
-                                    SafeDeleteFile(finalFilePath);
-                                }
-                                catch
-                                {
-                                    Logging.Log(String.Format("Attempt 3: '{0}' could not be deleted! Aborting installation...", toolFinalName), Severity.WARN);
-                                    return;
-                                }
-                            }
-                        }
-                        
                         if (!File.Exists(finalFilePath))
                         {
                             string finalToolFilePath = Path.Combine(directory, toolFinalName);
@@ -207,18 +282,17 @@ namespace FAES_Updater
                             {
                                 try
                                 {
-                                    Reg regControl = new Reg();
-
+                                    _regControl.CreateSoftwareFilePath(finalToolFilePath, tool);
                                     switch (tool)
                                     {
                                         case "faes_gui":
                                             {
                                                 if (_associateFileTypes)
-                                                    regControl.AssociateFileTypes(finalToolFilePath);
+                                                    _regControl.CreateFileTypeAssociation(finalToolFilePath);
                                                 if (_contextMenus)
-                                                    regControl.ContextMenus(finalToolFilePath);
+                                                    _regControl.CreateContextMenus(finalToolFilePath);
                                                 if(_startMenuShortcuts)
-                                                    regControl.StartShortcut(finalToolFilePath, "FileAES", "A GUI application for encrypting and decrypting files using FAES.");
+                                                    _regControl.CreateStartMenuShortcut(finalToolFilePath, "FileAES", "A GUI application for encrypting and decrypting files using FAES.");
 
                                                 string process = Path.Combine(directory, toolFinalName);
                                                 Logging.Log(String.Format("Starting process '{0}' to enable FullInstall...", toolFinalName), Severity.DEBUG);
@@ -240,11 +314,11 @@ namespace FAES_Updater
                                         case "faes_legacy":
                                             {
                                                 if (_associateFileTypes)
-                                                    regControl.AssociateFileTypes(finalToolFilePath);
+                                                    _regControl.CreateFileTypeAssociation(finalToolFilePath);
                                                 if (_contextMenus)
-                                                    regControl.ContextMenus(finalToolFilePath);
+                                                    _regControl.CreateContextMenus(finalToolFilePath);
                                                 if (_startMenuShortcuts)
-                                                    regControl.StartShortcut(finalToolFilePath, "FileAES Legacy", "A GUI application for encrypting and decrypting files using FAES.");
+                                                    _regControl.CreateStartMenuShortcut(finalToolFilePath, "FileAES Legacy", "A GUI application for encrypting and decrypting files using FAES.");
 
                                                 string launchParamsFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), @"mullak99\FileAES\config\FileAES_Legacy-launchParams.cfg");
                                                 File.WriteAllText(launchParamsFilePath, String.Format("--fullinstall\n--{0}\n{1}", _branch, string.Join("\n", DumpInstallerOptions())));
@@ -254,11 +328,11 @@ namespace FAES_Updater
                                         case "faes_cli":
                                         {
                                             if (_associateFileTypes)
-                                                regControl.AssociateFileTypes(finalToolFilePath);
+                                                _regControl.CreateFileTypeAssociation(finalToolFilePath);
                                             if (_contextMenus)
-                                                regControl.ContextMenus(finalToolFilePath);
+                                                _regControl.CreateContextMenus(finalToolFilePath);
                                             if (_startMenuShortcuts)
-                                                regControl.StartShortcut(finalToolFilePath, "FileAES CLI", "A CLI application for encrypting and decrypting files using FAES.");
+                                                _regControl.CreateStartMenuShortcut(finalToolFilePath, "FileAES CLI", "A CLI application for encrypting and decrypting files using FAES.");
 
                                             // Start process and automatically create full-install config, similar to "FAES_GUI".
                                             Logging.Log(String.Format("FullInstall enabled for '{0}'!", toolFinalName), Severity.DEBUG);
@@ -322,7 +396,7 @@ namespace FAES_Updater
 
             if (_tool == "faes" && _faesLib != "all")
             {
-                Logging.Log(String.Format("Library-based ZIP extaction selected."), Severity.DEBUG);
+                Logging.Log(String.Format("Library-based ZIP extraction selected."), Severity.DEBUG);
 
                 if (!Directory.Exists(tempPath)) Directory.CreateDirectory(tempPath);
                 ZipFile.ExtractToDirectory(sourceZipPath, tempPath);
@@ -538,7 +612,7 @@ namespace FAES_Updater
         private static void SelfDelete()
         {
             string thisFile = Assembly.GetExecutingAssembly().Location;
-            Logging.Log(String.Format("Initiating self-destuct ({0}).", thisFile), Severity.DEBUG);
+            Logging.Log(String.Format("Initiating self-destruct ({0}).", thisFile), Severity.DEBUG);
             Process.Start(new ProcessStartInfo()
             {
                 Arguments = "/C choice /C Y /N /D Y /T 1 & Del \"" + thisFile + "\"",
@@ -578,7 +652,7 @@ namespace FAES_Updater
 
         public static string GetBuildDateFormatted()
         {
-            return GetBuildDate().ToString("dd/MM/yyyy hh:mm:ss tt");
+            return GetBuildDate().ToString("yyyy-MM-dd hh:mm:ss tt");
         }
 
         public static DateTime GetBuildDate()
