@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using IWshRuntimeLibrary;
 using Microsoft.Win32;
 
@@ -243,6 +244,16 @@ namespace FAES_Updater
                     regmenu.Close();
                 if (regcmd != null)
                     regcmd.Close();
+            }
+        }
+
+        public void DeleteUserData()
+        {
+            string userData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "mullak99", "FileAES");
+            if (Directory.Exists(userData))
+            {
+                Directory.Delete(userData, true);
+                Logging.Log("Deleted userdata!");
             }
         }
 

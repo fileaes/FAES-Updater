@@ -36,6 +36,7 @@ namespace FAES_Updater
         private static bool _startMenuShortcuts = false;
         private static bool _contextMenus = false;
         private static bool _uninstall = false;
+        private static bool _deleteUserData = false;
         private static bool _showInstalled = false;
 
         private const string preReleaseTag = "";
@@ -96,6 +97,7 @@ namespace FAES_Updater
                 else if (strippedArg == "noextrafiles" || strippedArg == "pure" || strippedArg == "noextras") _writeExtraFiles = false;
                 else if (strippedArg == "showinstalled" || strippedArg == "installed" || strippedArg == "installedtools") _showInstalled = true;
                 else if (strippedArg == "uninstall") _uninstall = true;
+                else if (strippedArg == "deleteuserdata") _deleteUserData = true;
             }
 
             try
@@ -146,7 +148,7 @@ namespace FAES_Updater
                         else UpdateTool(_tool, _directory);
                         return 0;
                     }
-                    else
+
                     {
                         _regControl.DeleteContextMenus();
                         _regControl.DeleteFileTypeAssociation();
@@ -176,6 +178,8 @@ namespace FAES_Updater
                                     Logging.Log("An unexpected error occurred when uninstalling one or more FAES tools! Exception: " + e, Severity.ERROR);
                                 }
                             }
+
+                            if (_deleteUserData) _regControl.DeleteUserData();
                             _regControl.DeleteSoftwareFilePaths();
                             if (_deleteSelf) SelfDelete();
                             return 0;
