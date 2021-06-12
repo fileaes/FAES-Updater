@@ -66,25 +66,31 @@ namespace FAES_Updater
                 else if (strippedArg == "run" || strippedArg == "r" || strippedArg == "runpost") _runPost = true;
                 else if (strippedArg == "silent" || strippedArg == "s" || strippedArg == "headless") ShowWindow(handle, SW_HIDE);
                 else if (strippedArg == "preserveself" || strippedArg == "preserve" || strippedArg == "nodelete" || strippedArg == "nodel") _deleteSelf = false;
-                else if ((strippedArg == "delay" || strippedArg == "delaystart" || strippedArg == "delayinstall" || strippedArg == "delayupdater")
-                    && args.Length > i + 1 && !String.IsNullOrEmpty(args[i + 1]) && UInt16.TryParse(args[i + 1], out _delayStart)) { }
+                else if ((strippedArg == "delay" || strippedArg == "delaystart" || strippedArg == "delayinstall" ||
+                          strippedArg == "delayupdater") && args.Length > i + 1 && !String.IsNullOrEmpty(args[i + 1]) && UInt16.TryParse(args[i + 1], out _delayStart))
+                {
+                    i++;
+                }
                 else if ((strippedArg == "directory" || strippedArg == "d" || strippedArg == "dir" || strippedArg == "installdir")
                     && args.Length > i + 1 && !String.IsNullOrEmpty(args[i + 1]))
                 {
                     if (!Directory.Exists(args[i + 1])) Directory.CreateDirectory(args[i + 1]);
                     _directory = args[i + 1];
+                    i++;
                 }
                 else if ((strippedArg == "ver" || strippedArg == "v" || strippedArg == "version" || strippedArg == "toolversion" || strippedArg == "toolver")
                     && args.Length > i + 1 && !String.IsNullOrEmpty(args[i + 1]))
                 {
                     if (args[i + 1].ToLower() == "latest") _installVer = "latest";
                     else _installVer = args[i + 1].ToLower();
+                    i++;
                 }
                 else if ((strippedArg == "branch" || strippedArg == "b") && args.Length > i + 1 && !String.IsNullOrEmpty(args[i + 1]))
                 {
                     if (args[i + 1].ToLower() == "stable") _branch = "stable";
                     else if (args[i + 1].ToLower() == "beta") _branch = "beta";
                     else if (args[i + 1].ToLower() == "dev") _branch = "dev";
+                    i++;
                 }
                 else if ((strippedArg == "tool" || strippedArg == "t") && args.Length > i + 1 && !String.IsNullOrEmpty(args[i + 1]))
                 {
@@ -92,8 +98,13 @@ namespace FAES_Updater
                     else if (args[i + 1].ToLower() == "faes_gui") _tool = "faes_gui";
                     else if (args[i + 1].ToLower() == "faes_cli") _tool = "faes_cli";
                     else if (args[i + 1].ToLower() == "faes_legacy") _tool = "faes_legacy";
+                    i++;
                 }
-                else if ((strippedArg == "faeslib" || strippedArg == "l") && args.Length > i + 1 && !String.IsNullOrEmpty(args[i + 1])) _faesLib = args[i + 1].ToLower();
+                else if ((strippedArg == "faeslib" || strippedArg == "l") && args.Length > i + 1 && !String.IsNullOrEmpty(args[i + 1]))
+                {
+                    _faesLib = args[i + 1].ToLower();
+                    i++;
+                }
                 else if (strippedArg == "noextrafiles" || strippedArg == "pure" || strippedArg == "noextras") _writeExtraFiles = false;
                 else if (strippedArg == "showinstalled" || strippedArg == "installed" || strippedArg == "installedtools") _showInstalled = true;
                 else if (strippedArg == "uninstall") _uninstall = true;
@@ -104,15 +115,30 @@ namespace FAES_Updater
             {
                 if (_showUpdaterVer)
                 {
-                    Logging.Log(String.Format("FAES-Updater Version: {0}\r\nBuild Date: {1}", GetVersion(), GetBuildDateFormatted()));
+                    try
+                    {
+                        Logging.Log(String.Format("FAES-Updater Version: {0}\r\nBuild Date: {1}", GetVersion(), GetBuildDateFormatted()));
+                    }
+                    catch (Exception e)
+                    {
+                        Logging.Log(String.Format("Unable to show FAES-Updater information! Exception: {0}", e), Severity.ERROR);
+                    }
                 }
                 if (_showInstalled)
                 {
-                    string[] softwarePaths = _regControl.GetSoftwareFilePaths(out List<string> toolNames);
-
-                    for (int i = 0; i < softwarePaths.Length; i++)
+                    try
                     {
-                        Logging.Log(String.Format("Tool: {0}, Path: {1}", toolNames[i], softwarePaths[i]));
+                        string[] softwarePaths = _regControl.GetSoftwareFilePaths(out List<string> toolNames);
+
+                        if (softwarePaths != null && softwarePaths.Length > 0)
+                            for (int i = 0; i < softwarePaths.Length; i++)
+                            {
+                                Logging.Log(String.Format("Tool: {0}, Path: {1}", toolNames[i], softwarePaths[i]));
+                            }
+                    }
+                    catch (Exception e)
+                    {
+                        Logging.Log(String.Format("Unable to show currently installed tools! Exception: {0}", e), Severity.ERROR);
                     }
                 }
                 
@@ -196,7 +222,7 @@ namespace FAES_Updater
             }
             catch (SecurityException)
             {
-                Logging.Log(String.Format("Please run as an administrator!"), Severity.ERROR);
+                Logging.Log(String.Format("Permission Denied! Please run as an administrator."), Severity.ERROR);
                 return 2;
             }
         }
@@ -292,7 +318,7 @@ namespace FAES_Updater
                                 try
                                 {
                                     _regControl.CreateSoftwareFilePath(finalToolFilePath, tool);
-                                    switch (tool)
+                                    switch (tool.ToLower())
                                     {
                                         case "faes_gui":
                                             {
