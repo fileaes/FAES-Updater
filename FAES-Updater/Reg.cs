@@ -98,8 +98,6 @@ namespace FAES_Updater
 
         public void CreateStartMenuShortcut(string path, string appName, string description)
         {
-            DeleteStartMenuShortcuts(); // Delete existing start menu shortcuts related to FAES
-
             try
             {
                 if (!Directory.Exists(_startMenuShortcutPath))

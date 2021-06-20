@@ -326,7 +326,7 @@ namespace FAES_Updater
                                                     _regControl.CreateFileTypeAssociation(finalToolFilePath);
                                                 if (_contextMenus)
                                                     _regControl.CreateContextMenus(finalToolFilePath);
-                                                if(_startMenuShortcuts)
+                                                if (_startMenuShortcuts)
                                                     _regControl.CreateStartMenuShortcut(finalToolFilePath, "FileAES", "A GUI application for encrypting and decrypting files using FAES.");
 
                                                 string process = Path.Combine(directory, toolFinalName);
