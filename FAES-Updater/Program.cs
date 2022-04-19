@@ -23,7 +23,7 @@ namespace FAES_Updater
         private static string _tool = "faes_gui";
         private static string _faesLib = "all";
         private static string _installVer = "latest";
-        private static UInt16 _delayStart = 0;
+        private static ushort _delayStart = 0;
         private static bool _installSuite = false;
         private static bool _useThreadedWherePossible = false;
         private static bool _verbose = false;
@@ -67,32 +67,32 @@ namespace FAES_Updater
                 else if (strippedArg == "silent" || strippedArg == "s" || strippedArg == "headless") ShowWindow(handle, SW_HIDE);
                 else if (strippedArg == "preserveself" || strippedArg == "preserve" || strippedArg == "nodelete" || strippedArg == "nodel") _deleteSelf = false;
                 else if ((strippedArg == "delay" || strippedArg == "delaystart" || strippedArg == "delayinstall" ||
-                          strippedArg == "delayupdater") && args.Length > i + 1 && !String.IsNullOrEmpty(args[i + 1]) && UInt16.TryParse(args[i + 1], out _delayStart))
+                          strippedArg == "delayupdater") && args.Length > i + 1 && !string.IsNullOrEmpty(args[i + 1]) && UInt16.TryParse(args[i + 1], out _delayStart))
                 {
                     i++;
                 }
                 else if ((strippedArg == "directory" || strippedArg == "d" || strippedArg == "dir" || strippedArg == "installdir")
-                    && args.Length > i + 1 && !String.IsNullOrEmpty(args[i + 1]))
+                    && args.Length > i + 1 && !string.IsNullOrEmpty(args[i + 1]))
                 {
                     if (!Directory.Exists(args[i + 1])) Directory.CreateDirectory(args[i + 1]);
                     _directory = args[i + 1];
                     i++;
                 }
                 else if ((strippedArg == "ver" || strippedArg == "v" || strippedArg == "version" || strippedArg == "toolversion" || strippedArg == "toolver")
-                    && args.Length > i + 1 && !String.IsNullOrEmpty(args[i + 1]))
+                    && args.Length > i + 1 && !string.IsNullOrEmpty(args[i + 1]))
                 {
                     if (args[i + 1].ToLower() == "latest") _installVer = "latest";
                     else _installVer = args[i + 1].ToLower();
                     i++;
                 }
-                else if ((strippedArg == "branch" || strippedArg == "b") && args.Length > i + 1 && !String.IsNullOrEmpty(args[i + 1]))
+                else if ((strippedArg == "branch" || strippedArg == "b") && args.Length > i + 1 && !string.IsNullOrEmpty(args[i + 1]))
                 {
                     if (args[i + 1].ToLower() == "stable") _branch = "stable";
                     else if (args[i + 1].ToLower() == "beta") _branch = "beta";
                     else if (args[i + 1].ToLower() == "dev") _branch = "dev";
                     i++;
                 }
-                else if ((strippedArg == "tool" || strippedArg == "t") && args.Length > i + 1 && !String.IsNullOrEmpty(args[i + 1]))
+                else if ((strippedArg == "tool" || strippedArg == "t") && args.Length > i + 1 && !string.IsNullOrEmpty(args[i + 1]))
                 {
                     if (args[i + 1].ToLower() == "faes") _tool = "faes";
                     else if (args[i + 1].ToLower() == "faes_gui") _tool = "faes_gui";
@@ -100,7 +100,7 @@ namespace FAES_Updater
                     else if (args[i + 1].ToLower() == "faes_legacy") _tool = "faes_legacy";
                     i++;
                 }
-                else if ((strippedArg == "faeslib" || strippedArg == "l") && args.Length > i + 1 && !String.IsNullOrEmpty(args[i + 1]))
+                else if ((strippedArg == "faeslib" || strippedArg == "l") && args.Length > i + 1 && !string.IsNullOrEmpty(args[i + 1]))
                 {
                     _faesLib = args[i + 1].ToLower();
                     i++;
@@ -117,11 +117,11 @@ namespace FAES_Updater
                 {
                     try
                     {
-                        Logging.Log(String.Format("FAES-Updater Version: {0}\r\nBuild Date: {1}", GetVersion(), GetBuildDateFormatted()));
+                        Logging.Log($"FAES-Updater Version: {GetVersion()}\r\nBuild Date: {GetBuildDateFormatted()}");
                     }
                     catch (Exception e)
                     {
-                        Logging.Log(String.Format("Unable to show FAES-Updater information! Exception: {0}", e), Severity.ERROR);
+                        Logging.Log($"Unable to show FAES-Updater information! Exception: {e}", Severity.ERROR);
                     }
                 }
                 if (_showInstalled)
@@ -133,19 +133,19 @@ namespace FAES_Updater
                         if (softwarePaths != null && softwarePaths.Length > 0)
                             for (int i = 0; i < softwarePaths.Length; i++)
                             {
-                                Logging.Log(String.Format("Tool: {0}, Path: {1}", toolNames[i], softwarePaths[i]));
+                                Logging.Log($"Tool: {toolNames[i]}, Path: {softwarePaths[i]}");
                             }
                     }
                     catch (Exception e)
                     {
-                        Logging.Log(String.Format("Unable to show currently installed tools! Exception: {0}", e), Severity.ERROR);
+                        Logging.Log($"Unable to show currently installed tools! Exception: {e}", Severity.ERROR);
                     }
                 }
-                
+
                 {
                     if (_delayStart > 0)
                     {
-                        Logging.Log(String.Format("Update delay requested. Delaying any I/O operations for {0}ms...", _delayStart));
+                        Logging.Log($"Update delay requested. Delaying any I/O operations for {_delayStart}ms...");
                         Thread.Sleep(_delayStart);
                     }
 
@@ -155,7 +155,7 @@ namespace FAES_Updater
                         {
                             if (_useThreadedWherePossible)
                             {
-                                Logging.Log(String.Format("Install Suite is running in multi-threadded mode. Logging WILL NOT appear in a logical order."), Severity.WARN);
+                                Logging.Log("Install Suite is running in multi-threadded mode. Logging WILL NOT appear in a logical order.", Severity.WARN);
 
                                 Task updateToolFAESGUI = Task.Factory.StartNew(() => UpdateTool("faes_gui", Path.Combine(_directory, "FileAES")));
                                 Task updateToolFAESLegacy = Task.Factory.StartNew(() => UpdateTool("faes_legacy", Path.Combine(_directory, "FileAES_Legacy")));
@@ -196,7 +196,8 @@ namespace FAES_Updater
                                     }
                                     catch (Exception e)
                                     {
-                                        Logging.Log(String.Format("Could not delete '{0}' at path '{1}'. Exception: {2}", toolName, toolPath, e), Severity.ERROR);
+                                        Logging.Log(
+                                            $"Could not delete '{toolName}' at path '{toolPath}'. Exception: {e}", Severity.ERROR);
                                     }
                                 }
                                 catch (Exception e)
@@ -210,7 +211,7 @@ namespace FAES_Updater
                             if (_deleteSelf) SelfDelete();
                             return 0;
                         }
-                        
+
                         {
                             Logging.Log("Cannot find any installed FAES tools! If you are certain you have them installed please delete them manually.", Severity.WARN);
                             _regControl.DeleteSoftwareFilePaths();
@@ -222,7 +223,7 @@ namespace FAES_Updater
             }
             catch (SecurityException)
             {
-                Logging.Log(String.Format("Permission Denied! Please run as an administrator."), Severity.ERROR);
+                Logging.Log("Permission Denied! Please run as an administrator.", Severity.ERROR);
                 return 2;
             }
         }
@@ -232,15 +233,17 @@ namespace FAES_Updater
             switch (attemptNumber)
             {
                 case 1:
-                    Logging.Log(String.Format("Attempt 1: '{0}' could not be deleted! Attempting to find and end any FAES related processes before reattempting deletion...", toolName), Severity.WARN);
+                    Logging.Log(
+                        $"Attempt 1: '{toolName}' could not be deleted! Attempting to find and end any FAES related processes before reattempting deletion...", Severity.WARN);
                     KillFAES(toolName);
                     break;
                 case 2:
-                    Logging.Log(String.Format("Attempt 2: '{0}' could not be deleted! Going nuclear on all FAES related processes before reattempting deletion...", toolName), Severity.WARN);
+                    Logging.Log(
+                        $"Attempt 2: '{toolName}' could not be deleted! Going nuclear on all FAES related processes before reattempting deletion...", Severity.WARN);
                     KillFAES(null);
                     break;
                 case 3:
-                    Logging.Log(String.Format("Attempt 3: '{0}' could not be deleted! Aborting installation...", toolName), Severity.WARN);
+                    Logging.Log($"Attempt 3: '{toolName}' could not be deleted! Aborting installation...", Severity.WARN);
                     break;
                 default:
                     attemptNumber = 1;
@@ -269,24 +272,34 @@ namespace FAES_Updater
 
         private static void UpdateTool(string tool, string directory)
         {
-            if (String.IsNullOrWhiteSpace(directory)) directory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().CodeBase).Replace("file:", "").TrimStart(':', '/', '\\');
+            if (string.IsNullOrWhiteSpace(directory)) directory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().CodeBase).Replace("file:", "").TrimStart(':', '/', '\\');
 
             string toolNameFormatted;
 
-            if (tool == "faes") toolNameFormatted = "FAES";
-            else if (tool == "faes_gui") toolNameFormatted = "FAES_GUI";
-            else if (tool == "faes_cli") toolNameFormatted = "FAES_CLI";
-            else if (tool == "faes_legacy") toolNameFormatted = "FAES_Legacy";
-            else toolNameFormatted = tool.ToUpper();
+            switch (tool)
+            {
+                case "faes":
+                    toolNameFormatted = "FAES";
+                    break;
+                case "faes_gui":
+                    toolNameFormatted = "FAES_GUI";
+                    break;
+                case "faes_cli":
+                    toolNameFormatted = "FAES_CLI";
+                    break;
+                case "faes_legacy":
+                    toolNameFormatted = "FAES_Legacy";
+                    break;
+                default:
+                    toolNameFormatted = tool.ToUpper();
+                    break;
+            }
 
-            Logging.Log(String.Format("{0} Update Selected!", toolNameFormatted), Severity.DEBUG);
+            Logging.Log($"{toolNameFormatted} Update Selected!", Severity.DEBUG);
 
-            string downloadLink = String.Format("https://api.mullak99.co.uk/FAES/GetDownload.php?app={0}&ver={1}&branch={2}", tool, _installVer, _branch);
+            string downloadLink = $"https://api.mullak99.co.uk/FAES/GetDownload.php?app={tool}&ver={_installVer}&branch={_branch}";
             string installPath = Path.Combine(directory, "FAES_Updater_Temp");
-            string fileName;
-
-            if (_installVer != "latest") fileName = String.Format("{0}-{1}.zip", toolNameFormatted, _installVer);
-            else fileName = String.Format("{0}-{1}-{2}.zip", toolNameFormatted, _branch, _installVer);
+            string fileName = _installVer != "latest" ? $"{toolNameFormatted}-{_installVer}.zip" : $"{toolNameFormatted}-{_branch}-{_installVer}.zip";
 
             try
             {
@@ -296,10 +309,21 @@ namespace FAES_Updater
                     {
                         string toolFinalName = null;
 
-                        if (tool == "faes_gui") toolFinalName = "FileAES.exe";
-                        else if (tool == "faes_cli") toolFinalName = "FileAES-CLI.exe";
-                        else if (tool == "faes_legacy") toolFinalName = "FileAES_Legacy.exe";
-                        else toolFinalName = "FAES.dll";
+                        switch (tool)
+                        {
+                            case "faes_gui":
+                                toolFinalName = "FileAES.exe";
+                                break;
+                            case "faes_cli":
+                                toolFinalName = "FileAES-CLI.exe";
+                                break;
+                            case "faes_legacy":
+                                toolFinalName = "FileAES_Legacy.exe";
+                                break;
+                            default:
+                                toolFinalName = "FAES.dll";
+                                break;
+                        }
 
                         string finalFilePath = Path.Combine(directory, toolFinalName);
 
@@ -330,20 +354,22 @@ namespace FAES_Updater
                                                     _regControl.CreateStartMenuShortcut(finalToolFilePath, "FileAES", "A GUI application for encrypting and decrypting files using FAES.");
 
                                                 string process = Path.Combine(directory, toolFinalName);
-                                                Logging.Log(String.Format("Starting process '{0}' to enable FullInstall...", toolFinalName), Severity.DEBUG);
+                                                Logging.Log(
+                                                    $"Starting process '{toolFinalName}' to enable FullInstall...", Severity.DEBUG);
                                                 Process p = new Process
                                                 {
                                                     StartInfo =
                                                     {
                                                         FileName = process,
-                                                        Arguments = String.Format("--genFullInstallConfig --installBranch {0} {1}", _branch, string.Join(" ", DumpInstallerOptions())),
+                                                        Arguments =
+                                                            $"--genFullInstallConfig --installBranch {_branch} {string.Join(" ", DumpInstallerOptions())}",
                                                         UseShellExecute = false,
                                                         CreateNoWindow = true
                                                     }
                                                 };
                                                 p.Start();
                                                 Thread.Sleep(500);
-                                                Logging.Log(String.Format("FullInstall enabled for '{0}'!", toolFinalName), Severity.DEBUG);
+                                                Logging.Log($"FullInstall enabled for '{toolFinalName}'!", Severity.DEBUG);
                                                 break;
                                             }
                                         case "faes_legacy":
@@ -356,8 +382,9 @@ namespace FAES_Updater
                                                     _regControl.CreateStartMenuShortcut(finalToolFilePath, "FileAES Legacy", "A GUI application for encrypting and decrypting files using FAES.");
 
                                                 string launchParamsFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), @"mullak99\FileAES\config\FileAES_Legacy-launchParams.cfg");
-                                                File.WriteAllText(launchParamsFilePath, String.Format("--fullinstall\n--{0}\n{1}", _branch, string.Join("\n", DumpInstallerOptions())));
-                                                Logging.Log(String.Format("FullInstall enabled for '{0}'!", toolFinalName), Severity.DEBUG);
+                                                File.WriteAllText(launchParamsFilePath,
+                                                    $"--fullinstall\n--{_branch}\n{string.Join("\n", DumpInstallerOptions())}");
+                                                Logging.Log($"FullInstall enabled for '{toolFinalName}'!", Severity.DEBUG);
                                                 break;
                                             }
                                         case "faes_cli":
@@ -370,14 +397,14 @@ namespace FAES_Updater
                                                 _regControl.CreateStartMenuShortcut(finalToolFilePath, "FileAES CLI", "A CLI application for encrypting and decrypting files using FAES.");
 
                                             // Start process and automatically create full-install config, similar to "FAES_GUI".
-                                            Logging.Log(String.Format("FullInstall enabled for '{0}'!", toolFinalName), Severity.DEBUG);
+                                            Logging.Log($"FullInstall enabled for '{toolFinalName}'!", Severity.DEBUG);
                                             break;
                                             }
                                     }
                                 }
                                 catch
                                 {
-                                    Logging.Log(String.Format("FullInstall could not be enabled for '{0}'!", toolFinalName), Severity.WARN);
+                                    Logging.Log($"FullInstall could not be enabled for '{toolFinalName}'!", Severity.WARN);
                                 }
                             }
 
@@ -385,17 +412,17 @@ namespace FAES_Updater
                             {
                                 string process = Path.Combine(directory, toolFinalName);
 
-                                if (!String.IsNullOrEmpty(toolFinalName) && File.Exists(process))
+                                if (!string.IsNullOrEmpty(toolFinalName) && File.Exists(process))
                                 {
-                                    Logging.Log(String.Format("Starting process '{0}'...", toolFinalName), Severity.DEBUG);
+                                    Logging.Log($"Starting process '{toolFinalName}'...", Severity.DEBUG);
                                     Process.Start(process);
                                 }
-                                else Logging.Log(String.Format("'{0}' executible could not be found. Aborting auto-run.", toolFinalName), Severity.WARN);
+                                else Logging.Log($"'{toolFinalName}' executable could not be found. Aborting auto-run.", Severity.WARN);
                             }
                         }
                     }
                 }
-                else Logging.Log(String.Format("'{0}' on branch '{1}' does not exist!", _installVer, _branch), Severity.ERROR);
+                else Logging.Log($"'{_installVer}' on branch '{_branch}' does not exist!", Severity.ERROR);
             }
             catch (WebException)
             {
@@ -403,7 +430,7 @@ namespace FAES_Updater
             }
             catch (Exception e)
             {
-                Logging.Log(String.Format("An unexpected error occurred while downloading the install files! Exception: {0}", e.ToString()), Severity.ERROR);
+                Logging.Log($"An unexpected error occurred while downloading the install files! Exception: {e.ToString()}", Severity.ERROR);
             }
             finally
             {
@@ -413,9 +440,9 @@ namespace FAES_Updater
 
         private static bool DoesVersionExist(string tool, string installVer, string branch)
         {
-            Logging.Log(String.Format("Checking if '{0}' version '{1}' exists in branch '{2}'", tool, installVer, branch), Severity.DEBUG);
+            Logging.Log($"Checking if '{tool}' version '{installVer}' exists in branch '{branch}'", Severity.DEBUG);
 
-            string downloadLink = String.Format("https://api.mullak99.co.uk/FAES/DoesVersionExist.php?app={0}&ver={1}&branch={2}", tool, installVer, branch);
+            string downloadLink = $"https://api.mullak99.co.uk/FAES/DoesVersionExist.php?app={tool}&ver={installVer}&branch={branch}";
 
             WebClient webClient = new WebClient();
             string doesExist = webClient.DownloadString(new Uri(downloadLink));
@@ -428,13 +455,13 @@ namespace FAES_Updater
         private static void ExtractZip(string sourceZipPath, string destinationPath, string tempPath)
         {
             if (_verbose)
-                Logging.Log(String.Format("Extracting ZIP '{0}'", sourceZipPath), Severity.DEBUG);
+                Logging.Log($"Extracting ZIP '{sourceZipPath}'", Severity.DEBUG);
             else
                 Logging.Log("Extracting tool...");
 
             if (_tool == "faes" && _faesLib != "all")
             {
-                Logging.Log(String.Format("Library-based ZIP extraction selected."), Severity.DEBUG);
+                Logging.Log("Library-based ZIP extraction selected.", Severity.DEBUG);
 
                 if (!Directory.Exists(tempPath)) Directory.CreateDirectory(tempPath);
                 ZipFile.ExtractToDirectory(sourceZipPath, tempPath);
@@ -444,12 +471,13 @@ namespace FAES_Updater
 
                 foreach(string dir in dirs)
                 {
-                    Logging.Log(String.Format("Library Subpath added! '{0}'.", dir), Severity.DEBUG);
+                    Logging.Log($"Library Subpath added! '{dir}'.", Severity.DEBUG);
                     libPaths.Add(dir.Replace(tempPath, ""));
                 }
 
                 List<string> allFiles;
 
+                //TODO: Entire section needs updating
                 if (_faesLib.Contains("netstandard"))
                 {
                     string faesStandLib = _faesLib.Replace("netstandard", "");
@@ -468,7 +496,7 @@ namespace FAES_Updater
                 else
                 {
                     string net4xPath = libPaths.FirstOrDefault(path => path.Split('/', '\\').Last().Contains("net45"));
-                    Logging.Log(String.Format("NetFramework45-based library requested. Selecting '{0}'.", net4xPath), Severity.DEBUG);
+                    Logging.Log($"NetFramework45-based library requested. Selecting '{net4xPath}'.", Severity.DEBUG);
                     allFiles = Directory.GetFiles(net4xPath, "*.*", SearchOption.AllDirectories).ToList();
                 }
 
@@ -477,14 +505,14 @@ namespace FAES_Updater
                     string fileNameDest = Path.Combine(destinationPath, Path.GetFileName(file));
                     if (File.Exists(fileNameDest)) File.Delete(fileNameDest);
 
-                    Logging.Log(String.Format("Moving file '{0}' to '{1}'.", Path.GetFileName(file), destinationPath), Severity.DEBUG);
+                    Logging.Log($"Moving file '{Path.GetFileName(file)}' to '{destinationPath}'.", Severity.DEBUG);
                     File.Move(file, fileNameDest);
                 }
                 Logging.Log("Extraction completed!");
             }
             else
             {
-                Logging.Log(String.Format("Standard ZIP extraction selected."), Severity.DEBUG);
+                Logging.Log("Standard ZIP extraction selected.", Severity.DEBUG);
                 ZipFile.ExtractToDirectory(sourceZipPath, destinationPath);
             }
         }
@@ -498,38 +526,38 @@ namespace FAES_Updater
             if (!File.Exists(fullPath))
             {
                 if (_verbose)
-                    Logging.Log(String.Format("Downloading installation files to '{0}' from '{1}'...", fullPath, webLink), Severity.DEBUG);
+                    Logging.Log($"Downloading installation files to '{fullPath}' from '{webLink}'...", Severity.DEBUG);
                 else
                     Logging.Log("Downloading installation files...");
 
                 WebClient webClient = new WebClient();
                 string downloadLink = webClient.DownloadString(new Uri(webLink));
 
-                if (!String.IsNullOrWhiteSpace(downloadLink))
+                if (!string.IsNullOrWhiteSpace(downloadLink))
                 {
                     webClient.DownloadFile(new Uri(downloadLink), fullPath);
 
                     if (File.Exists(fullPath))
                     {
                         if (_verbose)
-                            Logging.Log(String.Format("Download of '{0}' complete!", fileName), Severity.DEBUG);
+                            Logging.Log($"Download of '{fileName}' complete!", Severity.DEBUG);
                         else
                             Logging.Log("Finished downloading installation files.");
 
                         return true;
                     }
-                    else Logging.Log("An unexpected error occurred while downloading the install files!", Severity.ERROR);
+                    Logging.Log("An unexpected error occurred while downloading the install files!", Severity.ERROR);
                 }
                 else Logging.Log("The requested file could not be found!", Severity.ERROR);
             }
-            else Logging.Log(String.Format("Cannot update since install files already exist in '{0}'!", fullPath), Severity.ERROR);
+            else Logging.Log($"Cannot update since install files already exist in '{fullPath}'!", Severity.ERROR);
 
             return false;
         }
 
         private static bool KillFAES(string tool)
         {
-            Logging.Log(String.Format("Searching for any FAES related processes..."), Severity.DEBUG);
+            Logging.Log("Searching for any FAES related processes...", Severity.DEBUG);
 
             if (tool != "faes_gui" || tool != "faes_cli" || tool != "faes_legacy" || tool != "faes") tool = null;
 
@@ -540,12 +568,12 @@ namespace FAES_Updater
                     foreach (var process in Process.GetProcessesByName("FileAES"))
                     {
                         process.Kill();
-                        Logging.Log(String.Format("Killed '{0}' (PID: {1})!", process.ProcessName, process.Id), Severity.DEBUG);
+                        Logging.Log($"Killed '{process.ProcessName}' (PID: {process.Id})!", Severity.DEBUG);
                     }
                     foreach (var process in Process.GetProcessesByName("FAES_GUI"))
                     {
                         process.Kill();
-                        Logging.Log(String.Format("Killed '{0}' (PID: {1})!", process.ProcessName, process.Id), Severity.DEBUG);
+                        Logging.Log($"Killed '{process.ProcessName}' (PID: {process.Id})!", Severity.DEBUG);
                     }
                 }
                 if (tool == "faes_cli" || tool == null)
@@ -553,17 +581,17 @@ namespace FAES_Updater
                     foreach (var process in Process.GetProcessesByName("FileAES-CLI"))
                     {
                         process.Kill();
-                        Logging.Log(String.Format("Killed '{0}' (PID: {1})!", process.ProcessName, process.Id), Severity.DEBUG);
+                        Logging.Log($"Killed '{process.ProcessName}' (PID: {process.Id})!", Severity.DEBUG);
                     }
                     foreach (var process in Process.GetProcessesByName("FileAES_CLI"))
                     {
                         process.Kill();
-                        Logging.Log(String.Format("Killed '{0}' (PID: {1})!", process.ProcessName, process.Id), Severity.DEBUG);
+                        Logging.Log($"Killed '{process.ProcessName}' (PID: {process.Id})!", Severity.DEBUG);
                     }
                     foreach (var process in Process.GetProcessesByName("FAES_CLI"))
                     {
                         process.Kill();
-                        Logging.Log(String.Format("Killed '{0}' (PID: {1})!", process.ProcessName, process.Id), Severity.DEBUG);
+                        Logging.Log($"Killed '{process.ProcessName}' (PID: {process.Id})!", Severity.DEBUG);
                     }
                 }
                 if (tool == "faes_legacy" || tool == null)
@@ -571,17 +599,17 @@ namespace FAES_Updater
                     foreach (var process in Process.GetProcessesByName("FileAES_Legacy"))
                     {
                         process.Kill();
-                        Logging.Log(String.Format("Killed '{0}' (PID: {1})!", process.ProcessName, process.Id), Severity.DEBUG);
+                        Logging.Log($"Killed '{process.ProcessName}' (PID: {process.Id})!", Severity.DEBUG);
                     }
                     foreach (var process in Process.GetProcessesByName("FileAES-Legacy"))
                     {
                         process.Kill();
-                        Logging.Log(String.Format("Killed '{0}' (PID: {1})!", process.ProcessName, process.Id), Severity.DEBUG);
+                        Logging.Log($"Killed '{process.ProcessName}' (PID: {process.Id})!", Severity.DEBUG);
                     }
                     foreach (var process in Process.GetProcessesByName("FAES_Legacy"))
                     {
                         process.Kill();
-                        Logging.Log(String.Format("Killed '{0}' (PID: {1})!", process.ProcessName, process.Id), Severity.DEBUG);
+                        Logging.Log($"Killed '{process.ProcessName}' (PID: {process.Id})!", Severity.DEBUG);
                     }
                 }
                 if (tool == "faes" || tool == null)
@@ -589,15 +617,15 @@ namespace FAES_Updater
                     foreach (var process in Process.GetProcessesByName("FAES"))
                     {
                         process.Kill();
-                        Logging.Log(String.Format("Killed '{0}'!", process.ToString()), Severity.DEBUG);
+                        Logging.Log($"Killed '{process.ToString()}'!", Severity.DEBUG);
                     }
                 }
-                Logging.Log(String.Format("Finished searching for any FAES related processes."), Severity.DEBUG);
+                Logging.Log("Finished searching for any FAES related processes.", Severity.DEBUG);
                 return true;
             }
             catch
             {
-                Logging.Log(String.Format("FAES related processed found, but FAES-Updater was unable to kill them. Manually close FAES related processes, or try running FAES-Updater as admin."), Severity.ERROR);
+                Logging.Log("FAES related processed found, but FAES-Updater was unable to kill them. Manually close FAES related processes, or try running FAES-Updater as admin.", Severity.ERROR);
                 return false;
             }
         }
@@ -629,7 +657,7 @@ namespace FAES_Updater
             if (File.Exists(path))
             {
                 File.Delete(path);
-                Logging.Log(String.Format("'{0}' deleted!", path), Severity.DEBUG);
+                Logging.Log($"'{path}' deleted!", Severity.DEBUG);
                 return true;
             }
             return false;
@@ -643,26 +671,33 @@ namespace FAES_Updater
 
                 if (tool != "faes_gui" || tool != "faes_cli" || tool != "faes_legacy" || tool != "faes") tool = "faes";
 
-                if (tool == "faes")
-                    licenseDownloadLink = "https://builds.mullak99.co.uk/FAES/FAES/LICENSE.txt";
-                else if (tool == "faes_gui")
-                    licenseDownloadLink = "https://builds.mullak99.co.uk/FAES/FAES_GUI/LICENSE.txt";
-                else if (tool == "faes_cli")
-                    licenseDownloadLink = "https://builds.mullak99.co.uk/FAES/FAES_CLI/LICENSE.txt";
-                else if (tool == "faes_legacy")
-                    licenseDownloadLink = "https://builds.mullak99.co.uk/FAES/FAES_Legacy/LICENSE.txt";
+                switch (tool)
+                {
+                    case "faes":
+                        licenseDownloadLink = "https://builds.mullak99.co.uk/FAES/FAES/LICENSE.txt";
+                        break;
+                    case "faes_gui":
+                        licenseDownloadLink = "https://builds.mullak99.co.uk/FAES/FAES_GUI/LICENSE.txt";
+                        break;
+                    case "faes_cli":
+                        licenseDownloadLink = "https://builds.mullak99.co.uk/FAES/FAES_CLI/LICENSE.txt";
+                        break;
+                    case "faes_legacy":
+                        licenseDownloadLink = "https://builds.mullak99.co.uk/FAES/FAES_Legacy/LICENSE.txt";
+                        break;
+                }
 
                 WebClient webClient = new WebClient();
                 webClient.DownloadFile(new Uri(licenseDownloadLink), Path.Combine(dir, "LICENSE.txt"));
 
-                Logging.Log(String.Format("Added extra files to '{0}'!", dir), Severity.DEBUG);
+                Logging.Log($"Added extra files to '{dir}'!", Severity.DEBUG);
             }
         }
 
         private static void SelfDelete()
         {
             string thisFile = Assembly.GetExecutingAssembly().Location;
-            Logging.Log(String.Format("Initiating self-destruct ({0}).", thisFile), Severity.DEBUG);
+            Logging.Log($"Initiating self-destruct ({thisFile}).", Severity.DEBUG);
             Process.Start(new ProcessStartInfo()
             {
                 Arguments = "/C choice /C Y /N /D Y /T 1 & Del \"" + thisFile + "\"",
@@ -693,11 +728,10 @@ namespace FAES_Updater
 
         public static string GetVersion()
         {
-            string[] ver = (typeof(FAES_Updater.Program).Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>().Version).Split('.');
-            if (String.IsNullOrEmpty(preReleaseTag))
+            string[] ver = (typeof(Program).Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>().Version).Split('.');
+            if (string.IsNullOrEmpty(preReleaseTag))
                 return "v" + ver[0] + "." + ver[1] + "." + ver[2];
-            else
-                return "v" + ver[0] + "." + ver[1] + "." + ver[2] + " (" + preReleaseTag + ")";
+            return "v" + ver[0] + "." + ver[1] + "." + ver[2] + " (" + preReleaseTag + ")";
         }
 
         public static string GetBuildDateFormatted()

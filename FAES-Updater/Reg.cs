@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using IWshRuntimeLibrary;
 using Microsoft.Win32;
 
@@ -26,7 +25,7 @@ namespace FAES_Updater
         {
             try
             {
-                Registry.SetValue(String.Format("HKEY_CURRENT_USER\\{0}\\{1}", _faesInstalledSoftware, appName), "Path", path);
+                Registry.SetValue($"HKEY_CURRENT_USER\\{_faesInstalledSoftware}\\{appName}", "Path", path);
             }
             catch (Exception e)
             {
@@ -57,7 +56,8 @@ namespace FAES_Updater
 
                 for (int i = 0; i < toolNames.Count; i++)
                 {
-                    using (RegistryKey key = Registry.CurrentUser.OpenSubKey(String.Format("{0}\\{1}", _faesInstalledSoftware, toolNames[i])))
+                    using (RegistryKey key = Registry.CurrentUser.OpenSubKey(
+                               $"{_faesInstalledSoftware}\\{toolNames[i]}"))
                     {
                         filePaths[i] = key.GetValue("Path").ToString();
                     }
@@ -75,7 +75,7 @@ namespace FAES_Updater
             try
             {
                 Registry.ClassesRoot.CreateSubKey(_faesExtentionFileType)?.SetValue("", "FAES", RegistryValueKind.String);
-                Registry.ClassesRoot.CreateSubKey(_faesShellOpenCommand)?.SetValue("", String.Format("{0} \"%1\"", pathToTool), RegistryValueKind.String);
+                Registry.ClassesRoot.CreateSubKey(_faesShellOpenCommand)?.SetValue("", $"{pathToTool} \"%1\"", RegistryValueKind.String);
             }
             catch (Exception e)
             {
@@ -115,11 +115,11 @@ namespace FAES_Updater
                 shortcut.TargetPath = path;
                 shortcut.Save();
 
-                Logging.Log(String.Format("Created Start Menu shortcut for '{0}'", appName), Severity.DEBUG);
+                Logging.Log($"Created Start Menu shortcut for '{appName}'", Severity.DEBUG);
             }
             catch (Exception e)
             {
-                Logging.Log(String.Format("Unable to create Start Menu shortcut for '{0}'! Exception: {1}", appName, e), Severity.WARN);
+                Logging.Log($"Unable to create Start Menu shortcut for '{appName}'! Exception: {e}", Severity.WARN);
             }
         }
 
@@ -162,17 +162,17 @@ namespace FAES_Updater
                 if (regmenu != null)
                 {
                     regmenu.SetValue("", "Open with FileAES");
-                    regmenu.SetValue("Icon", String.Format("\"{0}\"", pathToTool));
+                    regmenu.SetValue("Icon", $"\"{pathToTool}\"");
                 }
                 regcmd = Registry.ClassesRoot.CreateSubKey(_faesContextCommandNameFolders);
                 if (regcmd != null)
-                    regcmd.SetValue("", String.Format("\"{0}\" \"%1\"", pathToTool));
+                    regcmd.SetValue("", $"\"{pathToTool}\" \"%1\"");
 
                 Logging.Log("Created 'Open with FileAES' context menu (Folders)", Severity.DEBUG);
             }
             catch (Exception e)
             {
-                Logging.Log(String.Format("Could not add SystemFileAssociations: {0}", e), Severity.ERROR);
+                Logging.Log($"Could not add SystemFileAssociations: {e}", Severity.ERROR);
             }
             finally
             {
@@ -193,17 +193,17 @@ namespace FAES_Updater
                 if (regmenu != null)
                 {
                     regmenu.SetValue("", "Open with FileAES");
-                    regmenu.SetValue("Icon", String.Format("\"{0}\"", pathToTool));
+                    regmenu.SetValue("Icon", $"\"{pathToTool}\"");
                 }
                 regcmd = Registry.ClassesRoot.CreateSubKey(_faesContextCommandNameFiles);
                 if (regcmd != null)
-                    regcmd.SetValue("", String.Format("\"{0}\" \"%1\"", pathToTool));
+                    regcmd.SetValue("", $"\"{pathToTool}\" \"%1\"");
 
                 Logging.Log("Created 'Open with FileAES' context menu (Files)", Severity.DEBUG);
             }
             catch (Exception e)
             {
-                Logging.Log(String.Format("Could not add SystemFileAssociations: {0}", e));
+                Logging.Log($"Could not add SystemFileAssociations: {e}");
             }
             finally
             {
@@ -224,17 +224,17 @@ namespace FAES_Updater
                 if (regmenu != null)
                 {
                     regmenu.SetValue("", "Peek with FileAES");
-                    regmenu.SetValue("Icon", String.Format("\"{0}\"", pathToTool));
+                    regmenu.SetValue("Icon", $"\"{pathToTool}\"");
                 }
                 regcmd = Registry.ClassesRoot.CreateSubKey(_faesContextCommandNamePeek);
                 if (regcmd != null)
-                    regcmd.SetValue("", String.Format("\"{0}\" \"%1\" \"--peek\"", pathToTool));
+                    regcmd.SetValue("", $"\"{pathToTool}\" \"%1\" \"--peek\"");
 
                 Logging.Log("Created 'Peek with FileAES' context menu", Severity.DEBUG);
             }
             catch (Exception e)
             {
-                Logging.Log(String.Format("Could not add SystemFileAssociations: {0}", e), Severity.ERROR);
+                Logging.Log($"Could not add SystemFileAssociations: {e}", Severity.ERROR);
             }
             finally
             {
@@ -263,7 +263,7 @@ namespace FAES_Updater
             }
             catch (Exception)
             {
-                Logging.Log(String.Format("Could not delete key '{0}'! Are you sure it exists?", regKey.Name), Severity.WARN);
+                Logging.Log($"Could not delete key '{regKey.Name}'! Are you sure it exists?", Severity.WARN);
             }
         }
     }
